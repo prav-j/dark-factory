@@ -10,7 +10,7 @@ specs/
 /bin/
 coverage.out
 
-# Built binaries
-mockoidc
-registry
-orchestrator
+# Built binaries (root only)
+/mockoidc
+/registry
+/orchestrator
