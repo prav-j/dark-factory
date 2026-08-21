@@ -1,0 +1,50 @@
+# Per-org tenant isolation + noisy-neighbor guardrails (specs/16.1).
+# Applied per org namespace by the provisioning pipeline.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-example
+  labels:
+    agents.platform/tenant: "true"
+---
+# Interactive session pods preempt background work; system components rank highest.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: dark-factory-interactive
+value: 1000000
+globalDefault: false
+preemptionPolicy: PreemptLowerPriority
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: dark-factory-background
+value: 100000
+globalDefault: false
+preemptionPolicy: ""
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: sandbox-quota
+  namespace: tenant-example
+spec:
+  hard:
+    requests.cpu: "64"
+    requests.memory: 128Gi
+    count/pods: "32"
+---
+# Protects mid-commit sessions from node drains (specs/16.2): drains must
+# respect the budget while the stop hook pushes work to git.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sandbox-commit-protection
+  namespace: tenant-example
+spec:
+  maxUnavailable: 10%
+  selector:
+    matchLabels:
+      app: dark-factory-sandbox
