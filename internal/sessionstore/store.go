@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -260,14 +261,14 @@ func fromItem(item map[string]types.AttributeValue) *Session {
 		Status: str(attrStatus), EnvironmentKey: str("environmentKey"),
 	}
 	if n, ok := item["createdAt"].(*types.AttributeValueMemberN); ok {
-		var sec int64
-		fmt.Sscan(n.Value, &sec)
-		s.CreatedAt = time.Unix(sec, 0)
+		if sec, err := strconv.ParseInt(n.Value, 10, 64); err == nil {
+			s.CreatedAt = time.Unix(sec, 0)
+		}
 	}
 	if n, ok := item[attrExpires].(*types.AttributeValueMemberN); ok {
-		var sec int64
-		fmt.Sscan(n.Value, &sec)
-		s.TTL = time.Unix(sec, 0)
+		if sec, err := strconv.ParseInt(n.Value, 10, 64); err == nil {
+			s.TTL = time.Unix(sec, 0)
+		}
 	}
 	if b, ok := item["manifest"].(*types.AttributeValueMemberB); ok {
 		s.Manifest = b.Value
