@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"log"
 	"net/http"
@@ -11,16 +12,39 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/prav-j/dark-factory/internal/db"
 	"github.com/prav-j/dark-factory/internal/health"
+	"github.com/prav-j/dark-factory/internal/registry"
 )
 
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
+	dsn := flag.String("database-url", os.Getenv("DATABASE_URL"), "postgres DSN")
 	flag.Parse()
+
+	if *dsn == "" {
+		log.Fatal("DATABASE_URL (or -database-url) is required")
+	}
+
+	if err := db.MigrateUp(*dsn); err != nil {
+		log.Fatalf("migrate: %v", err)
+	}
+	conn, err := sql.Open("pgx", *dsn)
+	if err != nil {
+		log.Fatalf("open db: %v", err)
+	}
+	if err := conn.Ping(); err != nil {
+		log.Fatalf("ping db: %v", err)
+	}
+	defer func() { _ = conn.Close() }()
 
 	mux := http.NewServeMux()
 	h := health.NewHandler()
 	h.RegisterRoutes(mux)
+	h.Register("postgres", func() error { return conn.Ping() })
+	mux.Handle("/v1/", registry.NewHTTPHandler(registry.NewStore(conn)))
 
 	srv := &http.Server{
 		Addr:              *addr,
