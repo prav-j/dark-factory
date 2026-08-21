@@ -31,7 +31,7 @@ Checks start **PENDING** and flip to real assertions as features land.
 | 06 tool gateway | [conformance/06_tool_gateway_test.go](conformance/06_tool_gateway_test.go), [06_gateway_conformance_test.go](conformance/06_gateway_conformance_test.go) | 4 passed, 0 pending |
 | 07 MCP proxy | [conformance/07_mcp_proxy_test.go](conformance/07_mcp_proxy_test.go), [07_mcp_conformance_test.go](conformance/07_mcp_conformance_test.go) | 2 passed, 1 pending |
 | 08 secrets | [conformance/08_secrets_test.go](conformance/08_secrets_test.go) | pending (3 checks) |
-| 09 scaling & cost | [conformance/09_scaling_cost_test.go](conformance/09_scaling_cost_test.go) | pending (3 checks) |
+| 09 scaling & cost | [conformance/09_scaling_cost_test.go](conformance/09_scaling_cost_test.go), [09_budget_conformance_test.go](conformance/09_budget_conformance_test.go) | 2 passed, 1 pending |
 | 10 observability & audit | [conformance/10_observability_test.go](conformance/10_observability_test.go), [10_audit_conformance_test.go](conformance/10_audit_conformance_test.go) | 1 passed, 1 pending |
 | 11 threat model | [conformance/11_threat_model_test.go](conformance/11_threat_model_test.go), [11_security_pack_test.go](conformance/11_security_pack_test.go) | 4 passed, 0 pending |
 | 12 API surface | [conformance/12_api_test.go](conformance/12_api_test.go) | pending (2 checks) |
