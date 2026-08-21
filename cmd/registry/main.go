@@ -14,6 +14,7 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/prav-j/dark-factory/internal/authn"
 	"github.com/prav-j/dark-factory/internal/db"
 	"github.com/prav-j/dark-factory/internal/health"
 	"github.com/prav-j/dark-factory/internal/registry"
@@ -22,10 +23,14 @@ import (
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	dsn := flag.String("database-url", os.Getenv("DATABASE_URL"), "postgres DSN")
+	issuer := flag.String("oidc-issuer", os.Getenv("OIDC_ISSUER"), "OIDC issuer URL (e.g. http://localhost:8082)")
 	flag.Parse()
 
 	if *dsn == "" {
 		log.Fatal("DATABASE_URL (or -database-url) is required")
+	}
+	if *issuer == "" {
+		log.Fatal("OIDC_ISSUER (or -oidc-issuer) is required")
 	}
 
 	if err := db.MigrateUp(*dsn); err != nil {
@@ -44,7 +49,9 @@ func main() {
 	h := health.NewHandler()
 	h.RegisterRoutes(mux)
 	h.Register("postgres", func() error { return conn.Ping() })
-	mux.Handle("/v1/", registry.NewHTTPHandler(registry.NewStore(conn)))
+
+	auth := authn.NewAuthenticator(*issuer, &authn.DBResolver{DB: conn})
+	mux.Handle("/v1/", auth.Middleware(registry.NewHTTPHandler(registry.NewStore(conn))))
 
 	srv := &http.Server{
 		Addr:              *addr,

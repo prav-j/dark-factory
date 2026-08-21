@@ -1,0 +1,111 @@
+openapi: 3.0.3
+info:
+  title: dark-factory Control Plane API
+  version: "1.0"
+  description: >
+    Agent Registry surface (v1). All /v1 routes require
+    `Authorization: Bearer <OIDC ID token>`; the subject must be provisioned.
+security:
+  - bearerAuth: []
+paths:
+  /v1/agents:
+    post:
+      summary: Create an agent with its first draft version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, specYaml]
+              properties:
+                name: { type: string }
+                specYaml: { type: string }
+      responses:
+        "201": { description: Created }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { description: Duplicate agent name in org }
+        "422": { description: Invalid spec }
+  /v1/agents/{agentId}:
+    get:
+      summary: Get an agent (org-scoped)
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: OK }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/agents/{agentId}/versions:
+    post:
+      summary: Append the next draft version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [specYaml]
+              properties:
+                specYaml: { type: string }
+      responses:
+        "201": { description: Created }
+    get:
+      summary: List versions (newest first)
+      responses:
+        "200": { description: OK }
+  /v1/agents/{agentId}/versions/{version}:
+    get:
+      summary: Get a specific version
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string } }
+        - { name: version, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: OK }
+    put:
+      summary: Replace a draft version's spec (published versions are immutable)
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string } }
+        - { name: version, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [specYaml]
+              properties:
+                specYaml: { type: string }
+      responses:
+        "200": { description: Updated }
+        "409": { description: Version is not a draft }
+  /v1/agents/{agentId}/versions/{version}:publish:
+    post:
+      summary: Publish a draft and make it the current version
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string } }
+        - { name: version, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: Published }
+        "422": { description: Not a draft }
+  /v1/agents/{agentId}/versions/{version}:deprecate:
+    post:
+      summary: Deprecate a published version (only allowed post-publish change)
+      parameters:
+        - { name: agentId, in: path, required: true, schema: { type: string } }
+        - { name: version, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: Deprecated }
+        "422": { description: Not published }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token
+    Forbidden:
+      description: Authenticated subject is not provisioned
+    NotFound:
+      description: Resource does not exist in the caller's org
