@@ -14,3 +14,6 @@ coverage.out
 /mockoidc
 /registry
 /orchestrator
+
+# Conformance reports are CI artifacts
+conformance/report.json
