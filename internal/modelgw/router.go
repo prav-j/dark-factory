@@ -32,6 +32,8 @@ type CompletionRequest struct {
 	MaxTokens int
 	RunID     string // metering correlation
 	Agent     string
+	UserID    string // budget attribution
+	OrgID     string // budget attribution
 }
 
 // CompletionResponse is a successful completion.
@@ -54,6 +56,8 @@ type Provider interface {
 type UsageRecord struct {
 	RunID        string    `json:"runId"`
 	Agent        string    `json:"agent"`
+	UserID       string    `json:"userId"`
+	OrgID        string    `json:"orgId"`
 	Provider     string    `json:"provider"`
 	Model        string    `json:"model"`
 	InputTokens  int       `json:"inputTokens"`
@@ -170,6 +174,7 @@ func (r *Router) Complete(ctx context.Context, req CompletionRequest) (*Completi
 				resp.Provider = cand.p.Name()
 				r.meter.Record(ctx, UsageRecord{
 					RunID: req.RunID, Agent: req.Agent,
+					UserID: req.UserID, OrgID: req.OrgID,
 					Provider: resp.Provider, Model: req.Model,
 					InputTokens: resp.InputTokens, OutputTokens: resp.OutputTokens,
 					CostUSD: cost(req.Model, resp.InputTokens, resp.OutputTokens),
