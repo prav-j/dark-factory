@@ -36,7 +36,7 @@ Checks start **PENDING** and flip to real assertions as features land.
 | 11 threat model | [conformance/11_threat_model_test.go](conformance/11_threat_model_test.go) | pending (4 checks) |
 | 12 API surface | [conformance/12_api_test.go](conformance/12_api_test.go) | pending (2 checks) |
 | 15 executor environments | [conformance/15_executor_test.go](conformance/15_executor_test.go) | pending (4 checks) |
-| 16 deployment & sessions | [conformance/16_sessions_test.go](conformance/16_sessions_test.go) | pending (6 checks) |
+| 16 deployment & sessions | [conformance/16_sessions_test.go](conformance/16_sessions_test.go), [16_ddb_conformance_test.go](conformance/16_ddb_conformance_test.go) | 1 passed, 5 pending |
 
 Run locally:
 
