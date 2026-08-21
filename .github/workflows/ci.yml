@@ -34,6 +34,40 @@ jobs:
       - name: Run tests
         run: make test
 
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.20"
+          cache: true
+      - name: Integration tests (testcontainers)
+        run: make test-integration
+
+  coverage-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.20"
+          cache: true
+      - name: Coverage
+        run: |
+          go test ./... -race -coverprofile=coverage.out -count=1
+          # Exclude test infrastructure (internal/testutil) from the gate:
+          # its harness code is exercised by the integration job, not unit runs.
+          grep -vE "internal/testutil" coverage.out > coverage.gated.out || true
+          TOTAL=$(go tool cover -func=coverage.gated.out | tail -1 | awk '{print substr($3, 1, length($3)-1)}')
+          echo "total coverage: ${TOTAL}%"
+          # Gate: fail under 80% once real logic lands (health pkg is the seed)
+          AWK_RES=$(python3 -c "print(1 if float('${TOTAL:-0}') >= 80.0 else 0)")
+          if [ "$AWK_RES" != "1" ]; then
+            echo "::error::coverage ${TOTAL}% is below the 80% gate"
+            exit 1
+          fi
+
   build:
     runs-on: ubuntu-latest
     steps:
