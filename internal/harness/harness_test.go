@@ -35,10 +35,10 @@ type echoTool struct {
 	executions int
 }
 
-func (t *echoTool) Name() string                { return t.name }
-func (t *echoTool) Description() string         { return "echoes input" }
-func (t *echoTool) InputSchema() string         { return `{"type":"object"}` }
-func (t *echoTool) RequiresApproval() bool      { return t.approval }
+func (t *echoTool) Name() string           { return t.name }
+func (t *echoTool) Description() string    { return "echoes input" }
+func (t *echoTool) InputSchema() string    { return `{"type":"object"}` }
+func (t *echoTool) RequiresApproval() bool { return t.approval }
 func (t *echoTool) Execute(_ context.Context, in json.RawMessage) (string, error) {
 	t.executions++
 	t.lastInput = string(in)
@@ -47,7 +47,9 @@ func (t *echoTool) Execute(_ context.Context, in json.RawMessage) (string, error
 
 type memCheckpoints struct{ states map[string]*harness.RunState }
 
-func newCheckpointer() *memCheckpoints { return &memCheckpoints{states: map[string]*harness.RunState{}} }
+func newCheckpointer() *memCheckpoints {
+	return &memCheckpoints{states: map[string]*harness.RunState{}}
+}
 
 func (m *memCheckpoints) Save(_ context.Context, id string, s *harness.RunState) error {
 	cp := *s
