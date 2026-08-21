@@ -1,10 +1,16 @@
-.PHONY: build test lint vet cover ci clean
+.PHONY: build test test-integration test-e2e lint vet cover ci clean
 
 build:
 	go build ./...
 
 test:
 	go test ./... -race -count=1
+
+test-integration:
+	go test -tags=integration ./internal/testutil/... -race -count=1 -v
+
+test-e2e:
+	go test -tags=e2e ./e2e/... -race -count=1 -v
 
 lint:
 	golangci-lint run
