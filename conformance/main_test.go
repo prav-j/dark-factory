@@ -9,6 +9,15 @@ import (
 	"testing"
 )
 
+// report is the machine-readable CI drift signal.
+type report struct {
+	Total   int      `json:"total"`
+	Passed  int      `json:"passed"`
+	Pending int      `json:"pending"`
+	Checks  []Check  `json:"checks"`
+	PassedI []string `json:"passed_ids"`
+}
+
 // TestMain writes conformance-report.json after all checks run, giving CI a
 // machine-readable drift signal.
 func TestMain(m *testing.M) {

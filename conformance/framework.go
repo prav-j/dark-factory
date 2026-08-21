@@ -23,19 +23,10 @@ type Check struct {
 	Text string `json:"text"` // the requirement being verified
 }
 
-type report struct {
-	Total   int      `json:"total"`
-	Passed  int      `json:"passed"`
-	Pending int      `json:"pending"`
-	Checks  []Check  `json:"checks"`
-	PassedI []string `json:"passed_ids"`
-}
-
 var (
-	mu      sync.Mutex
-	all     []Check
-	passed  = map[string]bool{}
-	summary = &report{}
+	mu     sync.Mutex
+	all    []Check
+	passed = map[string]bool{}
 )
 
 func register(c Check) {
