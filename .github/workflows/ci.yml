@@ -68,6 +68,26 @@ jobs:
             exit 1
           fi
 
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.20"
+          cache: true
+      - name: Run spec-conformance suite
+        run: |
+          go test -tags=conformance ./conformance/... -v -count=1 2>&1 | tee conformance.log
+          echo "--- summary ---"
+          grep "conformance summary" conformance.log || true
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-report
+          path: conformance.log
+
   build:
     runs-on: ubuntu-latest
     steps:

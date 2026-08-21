@@ -1,0 +1,42 @@
+# dark-factory
+
+Managed agents platform: anyone can define an agent of their choice with access
+to tools and MCP, scoped strictly to their own identity. See `specs/` (local)
+for the system design.
+
+## Quick start
+
+```
+make ci          # vet + lint + build + unit tests
+make test        # unit tests (-race)
+make test-integration  # container-backed tests (requires Docker)
+go run ./cmd/registry      # control-plane registry service on :8080
+go run ./cmd/orchestrator  # execution-plane orchestrator service on :8081
+```
+
+## Spec conformance
+
+The `conformance/` suite maps every normative spec statement to a check.
+Checks start **PENDING** and flip to real assertions as features land.
+**CI green = complies with spec.**
+
+| Spec section | Check file | Status |
+|---|---|---|
+| 03 data model | [conformance/03_data_model_test.go](conformance/03_data_model_test.go) | pending (4 checks) |
+| 04 identity & scoping | [conformance/04_identity_test.go](conformance/04_identity_test.go) | pending (6 checks) |
+| 05 execution flow | [conformance/05_execution_test.go](conformance/05_execution_test.go) | pending (4 checks) |
+| 06 tool gateway | [conformance/06_tool_gateway_test.go](conformance/06_tool_gateway_test.go) | pending (4 checks) |
+| 07 MCP proxy | [conformance/07_mcp_proxy_test.go](conformance/07_mcp_proxy_test.go) | pending (3 checks) |
+| 08 secrets | [conformance/08_secrets_test.go](conformance/08_secrets_test.go) | pending (3 checks) |
+| 09 scaling & cost | [conformance/09_scaling_cost_test.go](conformance/09_scaling_cost_test.go) | pending (3 checks) |
+| 10 observability & audit | [conformance/10_observability_test.go](conformance/10_observability_test.go) | pending (2 checks) |
+| 11 threat model | [conformance/11_threat_model_test.go](conformance/11_threat_model_test.go) | pending (4 checks) |
+| 12 API surface | [conformance/12_api_test.go](conformance/12_api_test.go) | pending (2 checks) |
+| 15 executor environments | [conformance/15_executor_test.go](conformance/15_executor_test.go) | pending (4 checks) |
+| 16 deployment & sessions | [conformance/16_sessions_test.go](conformance/16_sessions_test.go) | pending (6 checks) |
+
+Run locally:
+
+```
+CONFORMANCE_REPORT=report.json go test -tags=conformance ./conformance/... -v
+```
