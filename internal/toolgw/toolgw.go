@@ -103,17 +103,28 @@ func (r *Registry) Catalog() []ToolDef {
 	return out
 }
 
+// LiveScopes provides the user's CURRENT granted scopes (specs/04: immediate
+// revocation). Backed by grants.ScopeCache with invalidation on revoke.
+type LiveScopes interface {
+	ActiveScopes(ctx context.Context, orgID, userID string) ([]string, error)
+}
+
 // Gateway executes calls through the full pipeline.
 type Gateway struct {
 	reg    *Registry
 	policy *policy.Engine
 	tokens *runtoken.Service
 	clock  func() time.Time
+	live   LiveScopes // optional; falls back to token-embedded grants
 }
 
 func New(reg *Registry, pol *policy.Engine, tokens *runtoken.Service) *Gateway {
 	return &Gateway{reg: reg, policy: pol, tokens: tokens, clock: time.Now}
 }
+
+// SetLiveScopes enables immediate-revocation semantics: consent scopes are
+// read live (cached with invalidation) instead of from the static claim set.
+func (g *Gateway) SetLiveScopes(ls LiveScopes) { g.live = ls }
 
 // CallResult is a completed tool invocation.
 type CallResult struct {
@@ -139,11 +150,20 @@ func (g *Gateway) Call(ctx context.Context, runToken, toolName string, input jso
 	}
 
 	// 3. Policy: org pattern + consent + agent-spec scope intersection.
+	// Consent scopes come from LIVE grant state when available so that
+	// revocation blocks within seconds (specs/04); the token's embedded
+	// grants are the offline fallback.
+	consents := claims.Grants
+	if g.live != nil {
+		if live, err := g.live.ActiveScopes(ctx, claims.OrgID, claims.UserID); err == nil {
+			consents = live
+		}
+	}
 	d := g.policy.Can(ctx, policy.Request{
 		OrgID: claims.OrgID, UserID: claims.UserID,
 		Action: "tool.call", Resource: toolName,
 		RequiredScope: rt.Def.RequiredScope,
-		Consents:      claims.Grants,
+		Consents:      consents,
 		AgentScopes:   claims.Grants,
 	})
 	if !d.Allowed {
