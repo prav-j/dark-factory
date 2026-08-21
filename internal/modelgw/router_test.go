@@ -18,7 +18,7 @@ type flakyProvider struct {
 	calls     int
 }
 
-func (f *flakyProvider) Name() string             { return f.name }
+func (f *flakyProvider) Name() string              { return f.name }
 func (f *flakyProvider) ServesModel(m string) bool { return m == f.model }
 func (f *flakyProvider) Complete(_ context.Context, _ modelgw.CompletionRequest) (*modelgw.CompletionResponse, error) {
 	f.calls++
@@ -33,8 +33,8 @@ func (f *flakyProvider) Complete(_ context.Context, _ modelgw.CompletionRequest)
 
 type alwaysFail struct{ name string }
 
-func (a *alwaysFail) Name() string               { return a.name }
-func (a *alwaysFail) ServesModel(string) bool    { return true }
+func (a *alwaysFail) Name() string            { return a.name }
+func (a *alwaysFail) ServesModel(string) bool { return true }
 func (a *alwaysFail) Complete(context.Context, modelgw.CompletionRequest) (*modelgw.CompletionResponse, error) {
 	return nil, errors.New("hard down")
 }

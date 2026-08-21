@@ -14,9 +14,9 @@ import (
 )
 
 var (
-	ErrNoProvider     = errors.New("no provider configured for model")
-	ErrAllProviders   = errors.New("all providers failed")
-	ErrRateLimited    = errors.New("rate limited")
+	ErrNoProvider   = errors.New("no provider configured for model")
+	ErrAllProviders = errors.New("all providers failed")
+	ErrRateLimited  = errors.New("rate limited")
 )
 
 // Message is one conversation turn.
@@ -70,7 +70,7 @@ type Meter interface {
 
 // MemoryMeter is an in-process collector.
 type MemoryMeter struct {
-	mu     sync.Mutex
+	mu       sync.Mutex
 	Recorded []UsageRecord
 }
 
