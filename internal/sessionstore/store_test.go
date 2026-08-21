@@ -111,3 +111,36 @@ func TestRunRecordsAndOversizeManifestGuard(t *testing.T) {
 		t.Fatal("oversize manifest must be rejected by the guard")
 	}
 }
+
+// W2.1: the run-token renewal adapter reads liveness + deadline via GSI.
+func TestSessionCheckerAdapter(t *testing.T) {
+	store := newStore(t)
+	ctx := context.Background()
+
+	sess := sessionstore.Session{
+		OrgID: "org-x", SessionID: "sess-live", UserID: "u",
+		AgentRef: "a@v1", Status: "Running",
+		CreatedAt: time.Now().Add(-3 * time.Hour), // 3h into a 4h lifetime
+		TTL:       time.Now().Add(24 * time.Hour),
+	}
+	if err := store.PutSession(ctx, sess); err != nil {
+		t.Fatal(err)
+	}
+
+	checker := sessionstore.NewSessionChecker(store, 4*time.Hour)
+	info, err := checker.GetSession(ctx, "sess-live")
+	if err != nil || !info.Alive {
+		t.Fatalf("alive session: %+v err %v", info, err)
+	}
+	if !info.Deadline.After(time.Now()) {
+		t.Fatalf("deadline %v should be in the future (3h of 4h used)", info.Deadline)
+	}
+
+	if err := store.UpdateStatus(ctx, "org-x", "sess-live", "Terminated"); err != nil {
+		t.Fatal(err)
+	}
+	info, err = checker.GetSession(ctx, "sess-live")
+	if err != nil || info.Alive {
+		t.Fatalf("terminated session must not be alive: %+v err %v", info, err)
+	}
+}

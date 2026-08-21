@@ -27,7 +27,10 @@ const (
 	attrExpires = "expiresAt" // TTL
 )
 
-var ErrTooLarge = errors.New("manifest exceeds DynamoDB item limit")
+var (
+	ErrNotFound = errors.New("not found")
+	ErrTooLarge = errors.New("manifest exceeds DynamoDB item limit")
+)
 
 // Session is one sandbox-bound unit of work.
 type Session struct {
@@ -71,14 +74,28 @@ func (s *Store) EnsureTables(ctx context.Context) error {
 			{AttributeName: aws.String(attrSession), AttributeType: types.ScalarAttributeTypeS},
 			{AttributeName: aws.String(attrUser), AttributeType: types.ScalarAttributeTypeS},
 			{AttributeName: aws.String(attrAgent), AttributeType: types.ScalarAttributeTypeS},
+			{AttributeName: aws.String("sessionIdOnly"), AttributeType: types.ScalarAttributeTypeS},
 		},
 		GlobalSecondaryIndexes: []types.GlobalSecondaryIndex{
 			gsi("user-index", attrUser, attrSession),
 			gsi("agent-index", attrAgent, attrSession),
+			gsi("session-id-index", "sessionIdOnly", attrSession),
 		},
 		BillingMode: types.BillingModePayPerRequest,
 	}); err != nil && !tableExists(err) {
 		return fmt.Errorf("create %s: %w", tableSessions, err)
+	}
+	if _, err := s.client.CreateTable(ctx, &dynamodb.CreateTableInput{
+		TableName: aws.String("SessionsLookup"),
+		KeySchema: []types.KeySchemaElement{
+			{AttributeName: aws.String(attrSession), KeyType: types.KeyTypeHash},
+		},
+		AttributeDefinitions: []types.AttributeDefinition{
+			{AttributeName: aws.String(attrSession), AttributeType: types.ScalarAttributeTypeS},
+		},
+		BillingMode: types.BillingModePayPerRequest,
+	}); err != nil && !tableExists(err) {
+		return fmt.Errorf("create SessionsLookup: %w", err)
 	}
 	if _, err := s.client.CreateTable(ctx, &dynamodb.CreateTableInput{
 		TableName: aws.String(tableRuns),
@@ -127,6 +144,7 @@ func (s *Store) item(sess Session) (map[string]types.AttributeValue, error) {
 	item := map[string]types.AttributeValue{
 		attrOrg:          &types.AttributeValueMemberS{Value: sess.OrgID},
 		attrSession:      &types.AttributeValueMemberS{Value: sess.SessionID},
+		"sessionIdOnly":  &types.AttributeValueMemberS{Value: sess.SessionID},
 		attrUser:         &types.AttributeValueMemberS{Value: sess.UserID},
 		attrAgent:        &types.AttributeValueMemberS{Value: sess.AgentRef},
 		attrStatus:       &types.AttributeValueMemberS{Value: sess.Status},
@@ -153,21 +171,58 @@ func (s *Store) PutSession(ctx context.Context, sess Session) error {
 		TableName: aws.String(tableSessions),
 		Item:      item,
 	})
+	if err != nil {
+		return err
+	}
+	// Strongly-consistent id-only lookup for token renewal paths.
+	_, err = s.client.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: aws.String("SessionsLookup"),
+		Item: map[string]types.AttributeValue{
+			attrSession: &types.AttributeValueMemberS{Value: sess.SessionID},
+			attrOrg:     &types.AttributeValueMemberS{Value: sess.OrgID},
+		},
+	})
 	return err
 }
 
 // UpdateStatus mutates only the status attribute.
 func (s *Store) UpdateStatus(ctx context.Context, orgID, sessionID, status string) error {
+	if orgID == "" {
+		var err error
+		orgID, err = s.lookupOrg(ctx, sessionID)
+		if err != nil {
+			return err
+		}
+	}
 	_, err := s.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
 		TableName:                aws.String(tableSessions),
 		Key:                      keyOf(orgID, sessionID),
 		UpdateExpression:         aws.String("SET #st = :st"),
-		ExpressionAttributeNames: map[string]string{"#st": "#status"},
+		ExpressionAttributeNames: map[string]string{"#st": "status"},
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":st": &types.AttributeValueMemberS{Value: status},
 		},
 	})
 	return err
+}
+
+// lookupOrg resolves an org id from the strongly-consistent lookup table.
+func (s *Store) lookupOrg(ctx context.Context, sessionID string) (string, error) {
+	out, err := s.client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName:      aws.String("SessionsLookup"),
+		Key:            map[string]types.AttributeValue{attrSession: &types.AttributeValueMemberS{Value: sessionID}},
+		ConsistentRead: aws.Bool(true),
+	})
+	if err != nil {
+		return "", err
+	}
+	if out.Item == nil {
+		return "", ErrNotFound
+	}
+	if v, ok := out.Item[attrOrg].(*types.AttributeValueMemberS); ok {
+		return v.Value, nil
+	}
+	return "", ErrNotFound
 }
 
 // GetSession fetches one session by org+id.
@@ -204,6 +259,16 @@ func fromItem(item map[string]types.AttributeValue) *Session {
 		UserID: str(attrUser), AgentRef: str(attrAgent),
 		Status: str(attrStatus), EnvironmentKey: str("environmentKey"),
 	}
+	if n, ok := item["createdAt"].(*types.AttributeValueMemberN); ok {
+		var sec int64
+		fmt.Sscan(n.Value, &sec)
+		s.CreatedAt = time.Unix(sec, 0)
+	}
+	if n, ok := item[attrExpires].(*types.AttributeValueMemberN); ok {
+		var sec int64
+		fmt.Sscan(n.Value, &sec)
+		s.TTL = time.Unix(sec, 0)
+	}
 	if b, ok := item["manifest"].(*types.AttributeValueMemberB); ok {
 		s.Manifest = b.Value
 	}
@@ -223,7 +288,7 @@ func (s *Store) ListResumableByUser(ctx context.Context, userID string) ([]*Sess
 		IndexName:                aws.String("user-index"),
 		KeyConditionExpression:   aws.String("#u = :u"),
 		FilterExpression:         aws.String("#st <> :term"),
-		ExpressionAttributeNames: map[string]string{"#u": attrUser, "#st": "#status"},
+		ExpressionAttributeNames: map[string]string{"#u": attrUser, "#st": "status"},
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":u":    &types.AttributeValueMemberS{Value: userID},
 			":term": &types.AttributeValueMemberS{Value: "Terminated"},
@@ -246,7 +311,7 @@ func (s *Store) CountActiveByAgent(ctx context.Context, agentRef string) (int, e
 		IndexName:                aws.String("agent-index"),
 		KeyConditionExpression:   aws.String("#a = :a"),
 		FilterExpression:         aws.String("#st <> :term"),
-		ExpressionAttributeNames: map[string]string{"#a": attrAgent, "#st": "#status"},
+		ExpressionAttributeNames: map[string]string{"#a": attrAgent, "#st": "status"},
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":a":    &types.AttributeValueMemberS{Value: agentRef},
 			":term": &types.AttributeValueMemberS{Value: "Terminated"},
