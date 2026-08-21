@@ -1,0 +1,51 @@
+# Local development stack. Dev-only credentials — never use in production.
+name: dark-factory-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: darkfactory
+      POSTGRES_PASSWORD: darkfactory-dev
+      POSTGRES_DB: darkfactory
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U darkfactory"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  localstack:
+    image: localstack/localstack:3.2
+    environment:
+      SERVICES: dynamodb
+    ports:
+      - "4566:4566"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4566/_localstack/health | grep -q '\"dynamodb\": \"available\"'"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  mockoidc:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.mockoidc
+    ports:
+      - "8082:8082"
+
+volumes:
+  pgdata:

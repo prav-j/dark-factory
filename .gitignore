@@ -9,3 +9,8 @@ specs/
 # Build artifacts & coverage
 /bin/
 coverage.out
+
+# Built binaries
+mockoidc
+registry
+orchestrator
