@@ -12,10 +12,7 @@ func TestIdentityScoping(t *testing.T) {
 	})
 	// C04-002 verified by the container-backed check in 04_token_conformance_test.go.
 	// C04-003 verified by the container-backed check in 04_token_conformance_test.go.
-	t.Run("C04-004_effective_scope_intersection", func(t *testing.T) {
-		Pending(t, Check{ID: "C04-004", Spec: "04-identity-scoping.md#permission-broker-policy-engine",
-			Text: "Effective scope = intersection of org policy, user consents, and agent spec scopes. Deny-by-default."})
-	})
+	// C04-004 verified by 04_policy_conformance_test.go.
 	// C04-005 verified by the container-backed check in 04_token_conformance_test.go.
 	t.Run("C04-006_session_sandbox_isolation", func(t *testing.T) {
 		Pending(t, Check{ID: "C04-006", Spec: "04-identity-scoping.md#tenant-isolation-layers",
