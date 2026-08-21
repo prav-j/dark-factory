@@ -10,8 +10,6 @@ func TestObservabilityAudit(t *testing.T) {
 		Pending(t, Check{ID: "C10-001", Spec: "10-observability-audit.md",
 			Text: "Every LLM call, tool call, and MCP call in a run is traced with spans correlated by run_id."})
 	})
-	t.Run("C10-002_append_only_audit_log", func(t *testing.T) {
-		Pending(t, Check{ID: "C10-002", Spec: "10-observability-audit.md",
-			Text: "Every authorization decision is recorded to an append-only audit log (who/what/allow-deny/why)."})
-	})
+	// C10-002 is verified by the container-backed check in
+	// 10_audit_conformance_test.go.
 }
