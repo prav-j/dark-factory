@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/prav-j/dark-factory/internal/authn"
 )
 
-// NewHTTPHandler returns the registry's REST surface. Authentication is not
-// applied here — issue #8 wraps this with OIDC middleware; until then
-// identity arrives via X-Org-ID / X-User-ID headers (dev only).
+// NewHTTPHandler returns the registry's REST surface. Callers must wrap it
+// with authentication middleware that injects an authn.Identity into the
+// request context (see internal/authn).
 func NewHTTPHandler(store *Store) http.Handler {
 	mux := http.NewServeMux()
 	h := &handler{store: store}
@@ -30,17 +32,17 @@ type identity struct {
 	userID string
 }
 
+// requireIdentity pulls the authenticated identity from the context placed
+// by the authn middleware. It is a defensive check: if middleware was not
+// mounted, requests fail closed with 401.
 func (h *handler) requireIdentity(next func(w http.ResponseWriter, r *http.Request, id identity)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := identity{
-			orgID:  r.Header.Get("X-Org-ID"),
-			userID: r.Header.Get("X-User-ID"),
-		}
-		if id.orgID == "" || id.userID == "" {
-			writeErr(w, http.StatusUnauthorized, "missing identity headers")
+		authID, ok := authn.FromContext(r.Context())
+		if !ok || authID.OrgID == "" || authID.UserID == "" {
+			writeErr(w, http.StatusUnauthorized, "authentication required")
 			return
 		}
-		next(w, r, id)
+		next(w, r, identity{orgID: authID.OrgID, userID: authID.UserID})
 	}
 }
 
