@@ -69,9 +69,8 @@ type Authenticator struct {
 	Resolver Resolver
 	Clock    Clock
 
-	mu    sync.Mutex
-	keys  map[string]*rsa.PublicKey
-	fetch time.Time // last JWKS fetch
+	mu   sync.Mutex
+	keys map[string]*rsa.PublicKey
 }
 
 // NewAuthenticator creates an authenticator for the given issuer.
@@ -202,7 +201,13 @@ func (a *Authenticator) refreshKeys() error {
 }
 
 func getJSON(rawURL string, into any) error {
-	resp, err := http.DefaultClient.Get(rawURL)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
