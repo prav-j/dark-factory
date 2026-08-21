@@ -1,0 +1,36 @@
+apiVersion: agents/v1
+kind: Agent
+metadata:
+  name: repo-triage-bot
+  owner: user-1234
+spec:
+  model:
+    provider: anthropic
+    name: claude-sonnet-4-5
+    params: { temperature: 0.2 }
+  prompt:
+    type: inline
+    value: "You triage incoming GitHub issues..."
+  tools:
+    - ref: builtin/web_search
+      scopes: [read]
+    - ref: github/create_issue
+      scopes: [repo:issues:write]
+      requiresApproval: true
+  mcpServers:
+    - ref: registry/github-official
+      version: "1.4"
+      auth: oauth-user
+      allowedTools: [issues.*, repos.read]
+  memory:
+    type: conversation
+    retention: 30d
+  triggers:
+    - type: chat
+    - type: schedule
+      cron: "0 * * * *"
+    - type: webhook
+  limits:
+    maxStepsPerRun: 25
+    maxTokensPerRun: 200000
+    monthlyBudgetUsd: 50
