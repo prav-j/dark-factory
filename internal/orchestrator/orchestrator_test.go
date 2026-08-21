@@ -17,9 +17,9 @@ import (
 )
 
 type fakeBudget struct {
-	mu        sync.Mutex
-	exceeded  map[string]bool // "org/user" -> over budget
-	checks    int
+	mu       sync.Mutex
+	exceeded map[string]bool // "org/user" -> over budget
+	checks   int
 }
 
 func (f *fakeBudget) CheckBudget(_ context.Context, orgID, userID string) error {
@@ -146,11 +146,13 @@ func TestInteractivePriorityOverBackground(t *testing.T) {
 	got := make(chan string, 6)
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	go func() { _ = orch.RunWorker(ctx, 0, "w", func(_ context.Context, req orchestrator.RunRequest) error {
-		time.Sleep(20 * time.Millisecond) // hold the queue so ordering is deterministic
-		got <- req.RunID
-		return nil
-	}) }()
+	go func() {
+		_ = orch.RunWorker(ctx, 0, "w", func(_ context.Context, req orchestrator.RunRequest) error {
+			time.Sleep(20 * time.Millisecond) // hold the queue so ordering is deterministic
+			got <- req.RunID
+			return nil
+		})
+	}()
 
 	first := <-got
 	if first != "ix-0" {
@@ -178,10 +180,12 @@ func TestBudgetRejectedBeforeEnqueue(t *testing.T) {
 	handled := make(chan orchestrator.RunRequest, 1)
 	wctx, cancel := context.WithTimeout(ctx, 1500*time.Millisecond)
 	defer cancel()
-	go func() { _ = orch.RunWorker(wctx, shardOf(orch, "broke"), "w", func(_ context.Context, r orchestrator.RunRequest) error {
-		handled <- r
-		return nil
-	}) }()
+	go func() {
+		_ = orch.RunWorker(wctx, shardOf(orch, "broke"), "w", func(_ context.Context, r orchestrator.RunRequest) error {
+			handled <- r
+			return nil
+		})
+	}()
 	select {
 	case r := <-handled:
 		t.Fatalf("over-budget run was scheduled: %+v", r)
