@@ -30,8 +30,8 @@ func (RealClock) Since(t time.Time) time.Duration { return time.Since(t) }
 
 // FakeClock is a manually advanced clock. Safe for concurrent use.
 type FakeClock struct {
-	mu   sync.Mutex
-	now  time.Time
+	mu     sync.Mutex
+	now    time.Time
 	timers []fakeTimer
 }
 

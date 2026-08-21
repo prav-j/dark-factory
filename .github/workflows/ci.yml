@@ -56,7 +56,10 @@ jobs:
       - name: Coverage
         run: |
           go test ./... -race -coverprofile=coverage.out -count=1
-          TOTAL=$(go tool cover -func=coverage.out | tail -1 | awk '{print substr($3, 1, length($3)-1)}')
+          # Exclude test infrastructure (internal/testutil) from the gate:
+          # its harness code is exercised by the integration job, not unit runs.
+          grep -vE "internal/testutil" coverage.out > coverage.gated.out || true
+          TOTAL=$(go tool cover -func=coverage.gated.out | tail -1 | awk '{print substr($3, 1, length($3)-1)}')
           echo "total coverage: ${TOTAL}%"
           # Gate: fail under 80% once real logic lands (health pkg is the seed)
           AWK_RES=$(python3 -c "print(1 if float('${TOTAL:-0}') >= 80.0 else 0)")
