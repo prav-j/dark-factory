@@ -112,8 +112,7 @@ func TestReplenishRespectsTargetAndCap(t *testing.T) {
 		t.Fatalf("topped-up pool should need nothing, forked %d", n)
 	}
 	// After consuming one, replenishing restores the target.
-	if _, _, _ = pool.Acquire(ctx, "k", "s"); true {
-	}
+	_, _, _ = pool.Acquire(ctx, "k", "s")
 	if n, _ := pool.Replenish(ctx, "k", 3); n != 1 {
 		t.Fatalf("after consumption expected 1 refill, got %d", n)
 	}
