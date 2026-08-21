@@ -26,7 +26,7 @@ Checks start **PENDING** and flip to real assertions as features land.
 | Spec section | Check file | Status |
 |---|---|---|
 | 03 data model | [conformance/03_data_model_test.go](conformance/03_data_model_test.go), [03_rls_conformance_test.go](conformance/03_rls_conformance_test.go), [03_registry_conformance_test.go](conformance/03_registry_conformance_test.go) | 3 passed, 1 pending |
-| 04 identity & scoping | [conformance/04_identity_test.go](conformance/04_identity_test.go) | pending (6 checks) |
+| 04 identity & scoping | [conformance/04_identity_test.go](conformance/04_identity_test.go), [04_token_conformance_test.go](conformance/04_token_conformance_test.go) | 3 passed, 3 pending |
 | 05 execution flow | [conformance/05_execution_test.go](conformance/05_execution_test.go) | pending (4 checks) |
 | 06 tool gateway | [conformance/06_tool_gateway_test.go](conformance/06_tool_gateway_test.go) | pending (4 checks) |
 | 07 MCP proxy | [conformance/07_mcp_proxy_test.go](conformance/07_mcp_proxy_test.go) | pending (3 checks) |
