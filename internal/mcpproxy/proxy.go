@@ -17,10 +17,10 @@ import (
 )
 
 var (
-	ErrNoConnection   = errors.New("no MCP connection for user/server")
-	ErrUnknownTool    = errors.New("tool not exposed for this run")
-	ErrPolicyDenied   = errors.New("denied by policy")
-	ErrBadResponse    = errors.New("invalid tool response")
+	ErrNoConnection = errors.New("no MCP connection for user/server")
+	ErrUnknownTool  = errors.New("tool not exposed for this run")
+	ErrPolicyDenied = errors.New("denied by policy")
+	ErrBadResponse  = errors.New("invalid tool response")
 )
 
 // ToolInfo describes a tool offered by an MCP server.
