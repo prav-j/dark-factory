@@ -18,8 +18,6 @@ func TestDataModel(t *testing.T) {
 		Pending(t, Check{ID: "C03-003", Spec: "03-data-model.md#entities-store-split",
 			Text: "Live run/session state lives in DynamoDB; completed-run lineage and message pointers land in Postgres. No entity is authoritative in both."})
 	})
-	t.Run("C03-004_rls_cross_tenant_reads_fail", func(t *testing.T) {
-		Pending(t, Check{ID: "C03-004", Spec: "03-data-model.md#entities-store-split",
-			Text: "Postgres row-level security keyed on org/user blocks cross-org reads."})
-	})
+	// C03-004 (RLS cross-tenant denial) is verified by the container-backed
+	// check in 03_rls_conformance_test.go.
 }

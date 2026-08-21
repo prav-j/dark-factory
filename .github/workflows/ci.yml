@@ -78,7 +78,7 @@ jobs:
           cache: true
       - name: Run spec-conformance suite
         run: |
-          go test -tags=conformance ./conformance/... -v -count=1 2>&1 | tee conformance.log
+          go test -tags=conformance,integration ./conformance/... -v -count=1 2>&1 | tee conformance.log
           echo "--- summary ---"
           grep "conformance summary" conformance.log || true
       - name: Upload report
