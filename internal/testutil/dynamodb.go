@@ -16,7 +16,7 @@ func DynamoDB(t *testing.T) (endpoint string) {
 	t.Helper()
 	c := start(t, testcontainers.ContainerRequest{
 		Image:        localImg,
-		Env:          map[string]string{"SERVICES": "dynamodb,s3"},
+		Env:          map[string]string{"SERVICES": "dynamodb,s3,kms"},
 		ExposedPorts: []string{"4566/tcp"},
 		WaitingFor:   wait.ForListeningPort("4566/tcp"),
 	})
