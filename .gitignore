@@ -1,1 +1,11 @@
 specs/
+
+# Environment & secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# Build artifacts & coverage
+/bin/
+coverage.out
