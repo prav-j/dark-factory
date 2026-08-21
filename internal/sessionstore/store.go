@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	tableSessions = "Sessions"
-	tableRuns     = "Runs"
+	tableSessions    = "Sessions"
+	tableRuns        = "Runs"
+	tableCheckpoints = "RunCheckpoints"
 
 	attrOrg     = "orgId"     // PK
 	attrSession = "sessionId" // SK
@@ -85,6 +86,18 @@ func (s *Store) EnsureTables(ctx context.Context) error {
 		BillingMode: types.BillingModePayPerRequest,
 	}); err != nil && !tableExists(err) {
 		return fmt.Errorf("create %s: %w", tableSessions, err)
+	}
+	if _, err := s.client.CreateTable(ctx, &dynamodb.CreateTableInput{
+		TableName: aws.String(tableCheckpoints),
+		KeySchema: []types.KeySchemaElement{
+			{AttributeName: aws.String("runId"), KeyType: types.KeyTypeHash},
+		},
+		AttributeDefinitions: []types.AttributeDefinition{
+			{AttributeName: aws.String("runId"), AttributeType: types.ScalarAttributeTypeS},
+		},
+		BillingMode: types.BillingModePayPerRequest,
+	}); err != nil && !tableExists(err) {
+		return fmt.Errorf("create %s: %w", tableCheckpoints, err)
 	}
 	if _, err := s.client.CreateTable(ctx, &dynamodb.CreateTableInput{
 		TableName: aws.String("SessionsLookup"),
@@ -323,6 +336,62 @@ func (s *Store) CountActiveByAgent(ctx context.Context, agentRef string) (int, e
 		return 0, err
 	}
 	return int(out.Count), nil
+}
+
+// SaveManifest attaches the final session manifest to the Sessions item.
+func (s *Store) SaveManifest(ctx context.Context, orgID, sessionID string, manifest []byte) error {
+	if len(manifest) > 350_000 {
+		return ErrTooLarge
+	}
+	_, err := s.client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName:        aws.String(tableSessions),
+		Key:              keyOf(orgID, sessionID),
+		UpdateExpression: aws.String("SET manifest = :m"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":m": &types.AttributeValueMemberB{Value: manifest},
+		},
+	})
+	return err
+}
+
+// SaveCheckpoint stores loop state for a run (harness.Checkpointer backing).
+func (s *Store) SaveCheckpoint(ctx context.Context, runID string, state []byte) error {
+	_, err := s.client.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: aws.String(tableCheckpoints),
+		Item: map[string]types.AttributeValue{
+			"runId": &types.AttributeValueMemberS{Value: runID},
+			"state": &types.AttributeValueMemberB{Value: state},
+		},
+	})
+	return err
+}
+
+// LoadCheckpoint fetches loop state for a run.
+func (s *Store) LoadCheckpoint(ctx context.Context, runID string) ([]byte, error) {
+	out, err := s.client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName:      aws.String(tableCheckpoints),
+		Key:            map[string]types.AttributeValue{"runId": &types.AttributeValueMemberS{Value: runID}},
+		ConsistentRead: aws.Bool(true),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if out.Item == nil {
+		return nil, errors.New("checkpoint not found")
+	}
+	if b, ok := out.Item["state"].(*types.AttributeValueMemberB); ok {
+		return b.Value, nil
+	}
+	return nil, errors.New("checkpoint missing state")
+}
+
+// DeleteCheckpoint drops a run's checkpoint.
+func (s *Store) DeleteCheckpoint(ctx context.Context, runID string) error {
+	_, err := s.client.DeleteItem(ctx, &dynamodb.DeleteItemInput{
+		TableName: aws.String(tableCheckpoints),
+		Key:       map[string]types.AttributeValue{"runId": &types.AttributeValueMemberS{Value: runID}},
+	})
+	return err
 }
 
 // PutRun records operational run state.
