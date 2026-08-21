@@ -26,8 +26,6 @@ func TestDeploymentSessions(t *testing.T) {
 		Pending(t, Check{ID: "C16-005", Spec: "16-deployment-sessions.md#resume-flow",
 			Text: "Resume needs only transcript + branch/PR refs from the manifest; fresh pod forks from environmentKey snapshot."})
 	})
-	t.Run("C16-006_ddb_session_store_access_patterns", func(t *testing.T) {
-		Pending(t, Check{ID: "C16-006", Spec: "16-deployment-sessions.md#session-store-dynamodb",
-			Text: "Sessions-by-org, resumable-by-user, active-per-agent lookups work via DDB GSIs; TTL expires terminated sessions."})
-	})
+	// C16-006 is verified by the container-backed check in
+	// 16_ddb_conformance_test.go.
 }
