@@ -7,12 +7,15 @@ for the system design.
 ## Quick start
 
 ```
+make dev-up      # Postgres + Redis + LocalStack(DDB) + mock OIDC (dev-only creds)
 make ci          # vet + lint + build + unit tests
 make test        # unit tests (-race)
 make test-integration  # container-backed tests (requires Docker)
 go run ./cmd/registry      # control-plane registry service on :8080
 go run ./cmd/orchestrator  # execution-plane orchestrator service on :8081
 ```
+
+Mint a dev identity token: `curl 'http://localhost:8082/token?user=alice&org=org-dev'`
 
 ## Spec conformance
 
