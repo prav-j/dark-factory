@@ -162,8 +162,12 @@ func TestPushProxiedWithUserCredentialsAndAuditTrail(t *testing.T) {
 		"base": "main", "title": "Feature X",
 	})
 	prResp, err := srv.Client().Post(srv.URL+"/pr", "application/json", strings.NewReader(string(prBody)))
-	if err != nil || prResp.StatusCode != http.StatusOK {
-		t.Fatalf("create PR: status=%d err=%v", prResp.StatusCode, err)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prResp.Body.Close()
+	if prResp.StatusCode != http.StatusOK {
+		t.Fatalf("create PR: status=%d", prResp.StatusCode)
 	}
 	if !pr.called || pr.head != "feature-x" {
 		t.Fatalf("PR not created as user: called=%v head=%q", pr.called, pr.head)
