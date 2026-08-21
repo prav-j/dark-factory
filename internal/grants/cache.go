@@ -10,9 +10,9 @@ import (
 // at most TTL; Revoke-invalidation propagates via the version counter so a
 // cached view never outlives a revocation by more than TTL (specs/04: <5s).
 type ScopeCache struct {
-	store  *Store
-	ttl    time.Duration
-	mu     sync.RWMutex
+	store   *Store
+	ttl     time.Duration
+	mu      sync.RWMutex
 	entries map[string]cacheEntry
 }
 
