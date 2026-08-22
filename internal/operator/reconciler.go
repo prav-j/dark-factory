@@ -199,6 +199,7 @@ func (r *SessionReconciler) sessionPod(sess *agentsv1alpha1.AgentSession) *corev
 				Name:         "harness",
 				Image:        r.SandboxImage,
 				VolumeMounts: []corev1.VolumeMount{{Name: "workspace", MountPath: "/workspace"}},
+				Env:          harnessEnv(sess),
 			}},
 			Volumes: []corev1.Volume{{
 				Name:         "workspace",
