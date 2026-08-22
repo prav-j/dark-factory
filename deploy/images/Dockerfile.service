@@ -1,0 +1,18 @@
+# Shared build template: one service per target.
+# Usage: docker build -f deploy/images/Dockerfile.service \
+#          --build-arg SERVICE=registry -t dark-factory/registry .
+FROM golang:1.20-alpine AS build
+ARG SERVICE
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY api/ ./api/
+COPY internal/ ./internal/
+COPY cmd/${SERVICE} ./cmd/${SERVICE}
+RUN CGO_ENABLED=0 go build -o /out/${SERVICE} ./cmd/${SERVICE}
+
+FROM alpine:3.19
+RUN adduser -D -u 10001 sandbox
+USER sandbox
+COPY --from=build /out/${SERVICE} /usr/local/bin/${SERVICE}
+ENTRYPOINT ["/usr/local/bin/${SERVICE}"]

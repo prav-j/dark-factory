@@ -24,6 +24,17 @@ cover:
 
 ci: vet lint build test
 
+SERVICES := registry orchestrator operator mockoidc
+
+build-images:
+	@for svc in $(SERVICES); do \
+		docker build -f deploy/images/Dockerfile.service --build-arg SERVICE=$$svc -t dark-factory/$$svc:dev . || exit 1; \
+	done
+
+load-images: build-images
+	@kind get clusters | grep -q . || (echo "no kind cluster"; exit 1)
+	@for svc in $(SERVICES); do kind load docker-image dark-factory/$$svc:dev; done
+
 dev-up:
 	docker compose -f deploy/compose.dev.yaml up -d --wait
 	@echo "Dev stack ready:"
