@@ -46,10 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := (&operator.SessionReconciler{
-		Client:       mgr.GetClient(),
-		SandboxImage: sandboxImage,
-	}).SetupWithManager(mgr); err != nil {
+	if err := operator.NewReconciler(mgr.GetClient(), sandboxImage).SetupWithManager(mgr); err != nil {
 		logger.Error(err, "unable to create controller")
 		os.Exit(1)
 	}

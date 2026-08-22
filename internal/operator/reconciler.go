@@ -184,7 +184,7 @@ func (r *SessionReconciler) sessionPod(sess *agentsv1alpha1.AgentSession) *corev
 		"agents.platform/session":     sess.Name,
 		"agents.platform/org":         sess.Spec.OrgID,
 		"agents.platform/user":        sess.Spec.UserID,
-		"agents.platform/environment": sess.Spec.EnvironmentKey,
+		"agents.platform/environment": sanitizeLabel(sess.Spec.EnvironmentKey),
 	}
 
 	return &corev1.Pod{
@@ -210,7 +210,37 @@ func boolPtr(b bool) *bool { return &b }
 
 // SetupWithManager registers the controller.
 func (r *SessionReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.Clock == nil {
+		r.Clock = realClock{}
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&agentsv1alpha1.AgentSession{}).
 		Complete(r)
+}
+
+// sanitizeLabel makes a value k8s-label-safe (alphanumerics, '-', '_', '.';
+// must start/end alphanumeric). Colons in snapshot keys ("sha256:abc") are
+// the common offender.
+func sanitizeLabel(v string) string {
+	out := make([]byte, 0, len(v))
+	for i := 0; i < len(v); i++ {
+		c := v[i]
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9', c == '-', c == '_', c == '.':
+			out = append(out, c)
+		default:
+			out = append(out, '-')
+		}
+	}
+	if len(out) == 0 {
+		return "none"
+	}
+	if out[0] == '-' || out[0] == '_' || out[0] == '.' {
+		out[0] = 'x'
+	}
+	last := out[len(out)-1]
+	if last == '-' || last == '_' || last == '.' {
+		out[len(out)-1] = 'x'
+	}
+	return string(out)
 }

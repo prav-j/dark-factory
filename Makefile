@@ -31,9 +31,26 @@ build-images:
 		docker build -f deploy/images/Dockerfile.service --build-arg SERVICE=$$svc -t dark-factory/$$svc:dev . || exit 1; \
 	done
 
+KIND_CLUSTER ?= dark-factory
+
 load-images: build-images
-	@kind get clusters | grep -q . || (echo "no kind cluster"; exit 1)
-	@for svc in $(SERVICES); do kind load docker-image dark-factory/$$svc:dev; done
+	@$(KIND) get clusters | grep -q $(KIND_CLUSTER) || (echo "no kind cluster $(KIND_CLUSTER)"; exit 1)
+	@for svc in $(SERVICES); do $(KIND) load docker-image --name $(KIND_CLUSTER) dark-factory/$$svc:dev; done
+
+KUBECTL ?= kubectl
+KIND ?= kind
+
+live-up: build-images
+	$(KIND) get clusters | grep -q dark-factory || $(KIND) create cluster --config deploy/kind.yaml
+	$(MAKE) load-images
+	$(KUBECTL) apply -f deploy/kubernetes/crd
+	$(KUBECTL) apply -f deploy/live/live.yaml
+	@echo "waiting for rollouts..."
+	$(KUBECTL) -n dark-factory rollout status deploy/registry deploy/orchestrator deploy/operator --timeout=180s || true
+	@echo "dark-factory live: registry :30080, mockoidc :30081"
+
+live-down:
+	$(KIND) delete cluster --name dark-factory
 
 dev-up:
 	docker compose -f deploy/compose.dev.yaml up -d --wait
