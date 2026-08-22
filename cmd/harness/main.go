@@ -19,6 +19,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -53,6 +54,15 @@ type config struct {
 	specYAML    string
 	userMessage string
 	granted     []string
+}
+
+func specYAML() string {
+	if b64 := os.Getenv("SPEC_YAML_B64"); b64 != "" {
+		if raw, err := base64.StdEncoding.DecodeString(b64); err == nil {
+			return string(raw)
+		}
+	}
+	return os.Getenv("SPEC_YAML")
 }
 
 func configFromEnv() config {
