@@ -132,6 +132,9 @@ type CallResult struct {
 	Duration time.Duration `json:"duration"`
 }
 
+// Catalog returns registered tool definitions (delegated from Registry).
+func (g *Gateway) Catalog() []ToolDef { return g.reg.Catalog() }
+
 // Call runs the pipeline in order (C06-001). Any failure aborts before the
 // executor sees the request.
 func (g *Gateway) Call(ctx context.Context, runToken, toolName string, input json.RawMessage) (*CallResult, error) {

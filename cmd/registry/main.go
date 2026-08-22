@@ -18,6 +18,7 @@ import (
 	"github.com/prav-j/dark-factory/internal/db"
 	"github.com/prav-j/dark-factory/internal/health"
 	"github.com/prav-j/dark-factory/internal/registry"
+	"github.com/prav-j/dark-factory/internal/runtoken"
 )
 
 func main() {
@@ -52,6 +53,16 @@ func main() {
 
 	auth := authn.NewAuthenticator(*issuer, &authn.DBResolver{DB: conn})
 	mux.Handle("/v1/", auth.Middleware(registry.NewHTTPHandler(registry.NewStore(conn))))
+
+	// Internal execution-plane gateway: session pods call these routes with
+	// their run token to reach the model and tool gateways.
+	checker := newSessionChecker()
+	tokens := runtoken.New([]byte(runTokenSecret()), checker, nil)
+	internal := &registry.InternalGateway{
+		Tokens: tokens,
+		Model:  registry.NewScriptedCompleterFromEnv(),
+	}
+	internal.Register(mux)
 
 	srv := &http.Server{
 		Addr:              *addr,

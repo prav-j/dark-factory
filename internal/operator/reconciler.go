@@ -6,6 +6,8 @@ package operator
 
 import (
 	"context"
+	"sort"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -243,4 +245,19 @@ func sanitizeLabel(v string) string {
 		out[len(out)-1] = 'x'
 	}
 	return string(out)
+}
+
+const harnessEnvPrefix = "harness.dark-factory/"
+
+// harnessEnv forwards harness.* annotations into container env so the
+// sandbox binary receives its run configuration without any k8s API access.
+func harnessEnv(sess *agentsv1alpha1.AgentSession) []corev1.EnvVar {
+	var out []corev1.EnvVar
+	for k, v := range sess.Annotations {
+		if name, ok := strings.CutPrefix(k, harnessEnvPrefix); ok {
+			out = append(out, corev1.EnvVar{Name: name, Value: v})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
 }
