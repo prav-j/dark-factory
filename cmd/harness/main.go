@@ -75,7 +75,7 @@ func configFromEnv() config {
 		userID:      os.Getenv("USER_ID"),
 		agentRef:    os.Getenv("AGENT_REF"),
 		model:       os.Getenv("MODEL"),
-		specYAML:    os.Getenv("SPEC_YAML"),
+		specYAML:    specYAML(),
 		userMessage: os.Getenv("USER_MESSAGE"),
 		granted:     splitCSV(os.Getenv("GRANTED_TOOLS")),
 	}

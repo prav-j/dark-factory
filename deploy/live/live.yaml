@@ -109,7 +109,7 @@ spec:
       containers:
         - name: mockoidc
           image: dark-factory/mockoidc:dev
-          args: ["--addr=:8082", "--public-url=http://localhost:30081"]
+          args: ["--addr=:8082", "--public-url=http://mockoidc.dark-factory.svc:8082"]
           ports: [{containerPort: 8082}]
 ---
 apiVersion: v1
@@ -219,5 +219,5 @@ spec:
       containers:
         - name: operator
           image: dark-factory/operator:dev
-          args: ["--sandbox-image=nginx:alpine"]
+          args: ["--sandbox-image=dark-factory/sandbox-harness:dev"]
           ports: [{containerPort: 8083}]
