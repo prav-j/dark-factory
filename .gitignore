@@ -1,4 +1,3 @@
-specs/
 
 # Environment & secrets — never commit
 .env
