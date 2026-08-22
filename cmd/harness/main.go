@@ -19,6 +19,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -55,6 +56,15 @@ type config struct {
 	granted     []string
 }
 
+func specYAML() string {
+	if b64 := os.Getenv("SPEC_YAML_B64"); b64 != "" {
+		if raw, err := base64.StdEncoding.DecodeString(b64); err == nil {
+			return string(raw)
+		}
+	}
+	return os.Getenv("SPEC_YAML")
+}
+
 func configFromEnv() config {
 	return config{
 		registryURL: strings.TrimSuffix(os.Getenv("REGISTRY_URL"), "/"),
@@ -65,7 +75,7 @@ func configFromEnv() config {
 		userID:      os.Getenv("USER_ID"),
 		agentRef:    os.Getenv("AGENT_REF"),
 		model:       os.Getenv("MODEL"),
-		specYAML:    os.Getenv("SPEC_YAML"),
+		specYAML:    specYAML(),
 		userMessage: os.Getenv("USER_MESSAGE"),
 		granted:     splitCSV(os.Getenv("GRANTED_TOOLS")),
 	}
