@@ -49,6 +49,9 @@ live-up: build-images
 	$(KUBECTL) -n dark-factory rollout status deploy/registry deploy/orchestrator deploy/operator --timeout=180s || true
 	@echo "dark-factory live: registry :30080, mockoidc :30081"
 
+live-scenario:
+	./scripts/live-scenario.sh
+
 live-down:
 	$(KIND) delete cluster --name dark-factory
 
