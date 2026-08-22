@@ -1,0 +1,10 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: dark-factory
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080 # registry nodeport
+        hostPort: 30080
+      - containerPort: 30081 # mockoidc
+        hostPort: 30081

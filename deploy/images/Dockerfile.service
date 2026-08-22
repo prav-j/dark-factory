@@ -12,7 +12,8 @@ COPY cmd/${SERVICE} ./cmd/${SERVICE}
 RUN CGO_ENABLED=0 go build -o /out/${SERVICE} ./cmd/${SERVICE}
 
 FROM alpine:3.19
+ARG SERVICE
 RUN adduser -D -u 10001 sandbox
 USER sandbox
-COPY --from=build /out/${SERVICE} /usr/local/bin/${SERVICE}
-ENTRYPOINT ["/usr/local/bin/${SERVICE}"]
+COPY --from=build /out/${SERVICE} /usr/local/bin/app
+ENTRYPOINT ["/usr/local/bin/app"]
