@@ -25,7 +25,6 @@ import (
 )
 
 // orgPolicyPatterns holds tool-call globs configured via ORG_TOOL_PATTERNS.
-var orgPatterns []string
 var orgPolicyPatterns []string
 
 func main() {
@@ -70,7 +69,7 @@ func main() {
 				pats = append(pats, p)
 			}
 		}
-		orgPatterns = pats
+		orgPolicyPatterns = pats
 	}
 
 	// Internal execution-plane gateway: session pods call these routes with
