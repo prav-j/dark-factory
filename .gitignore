@@ -17,3 +17,7 @@ coverage.out
 
 # Conformance reports are CI artifacts
 conformance/report.json
+
+# scenario artifacts
+create.json
+pub.json
